@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор стоимости 3D-печати</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .calculator-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-top: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .calculator-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .unit {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+        
+        .unit input {
+            padding-right: 60px;
+        }
+        
+        .unit::after {
+            content: attr(data-unit);
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        
+        .results {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-top: 20px;
+            border-left: 5px solid #3498db;
+        }
+        
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        .result-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #2c3e50;
+        }
+        
+        .cost-breakdown {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px dashed #ddd;
+        }
+        
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        .profit-item {
+            background-color: #e8f6ef;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 5px;
+            font-weight: 600;
+            color: #27ae60;
+        }
+        
+        .price-per-gram {
+            background-color: #e8f4fc;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 5px;
+            font-size: 14px;
+            text-align: center;
+            border: 1px solid #3498db;
+        }
+        
+        .button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        
+        .button:hover {
+            background-color: #2980b9;
+        }
+        
+        .reset-button {
+            background-color: #95a5a6;
+            margin-top: 15px;
+        }
+        
+        .reset-button:hover {
+            background-color: #7f8c8d;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .complexity-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .complexity-option, .operator-option {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+            background-color: white;
+        }
+        
+        .complexity-option:hover, .operator-option:hover {
+            border-color: #bdc3c7;
+            background-color: #f8f9fa;
+        }
+        
+        .complexity-option.active, .operator-option.active {
+            font-weight: 600;
+        }
+        
+        .complexity-option[data-level="1"].active {
+            border-color: #3498db;
+            background-color: #ebf5fb;
+            color: #2980b9;
+        }
+        
+        .complexity-option[data-level="2"].active {
+            border-color: #2ecc71;
+            background-color: #e8f6f0;
+            color: #27ae60;
+        }
+        
+        .complexity-option[data-level="3"].active {
+            border-color: #f1c40f;
+            background-color: #fef9e7;
+            color: #d68910;
+        }
+        
+        .complexity-option[data-level="4"].active {
+            border-color: #e74c3c;
+            background-color: #fdedec;
+            color: #c0392b;
+        }
+        
+        .complexity-option[data-level="5"].active {
+            border-color: #8e44ad;
+            background-color: #f4ecf7;
+            color: #7d3c98;
+        }
+        
+        .operator-option[data-level="1"].active {
+            border-color: #3498db;
+            background-color: #ebf5fb;
+            color: #2980b9;
+        }
+        
+        .operator-option[data-level="2"].active {
+            border-color: #2ecc71;
+            background-color: #e8f6f0;
+            color: #27ae60;
+        }
+        
+        .operator-option[data-level="3"].active {
+            border-color: #f1c40f;
+            background-color: #fef9e7;
+            color: #d68910;
+        }
+        
+        .operator-option[data-level="4"].active {
+            border-color: #e74c3c;
+            background-color: #fdedec;
+            color: #c0392b;
+        }
+        
+        .operator-option[data-level="5"].active {
+            border-color: #8e44ad;
+            background-color: #f4ecf7;
+            color: #7d3c98;
+        }
+        
+        .complexity-description, .operator-description {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f7ff;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        @media (max-width: 600px) {
+            .calculator-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .calculator-container {
+                padding: 20px;
+            }
+            
+            .complexity-options {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .material-info {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            border-left: 3px solid #3498db;
+        }
+        
+        .info-note {
+            background-color: #e8f4fc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #2c3e50;
+            border-left: 4px solid #3498db;
+        }
+        
+        .info-note h3 {
+            margin-top: 0;
+            color: #2980b9;
+            font-size: 16px;
+        }
+        
+        .material-data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .spool-example {
+            background-color: #fff8e1;
+            border-radius: 6px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #5d4037;
+            border: 1px dashed #ffb300;
+        }
+        
+        .spool-example h4 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #e65100;
+            font-size: 14px;
+        }
+        
+        .spool-example ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .spool-example li {
+            margin-bottom: 3px;
+        }
+        
+        .hint {
+            font-size: 13px;
+            color: #7f8c8d;
+            margin-top: 5px;
+            font-style: italic;
+        }
+        
+        .complexity-icon, .operator-icon {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .complexity-label, .operator-label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .complexity-factor, .operator-factor {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 3px;
+        }
+        
+        .market-price {
+            background-color: #fef9e7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #5d4037;
+            border-left: 4px solid #f1c40f;
+        }
+        
+        .market-price h3 {
+            margin-top: 0;
+            color: #d68910;
+            font-size: 16px;
+        }
+        
+        .price-comparison {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        
+        .price-comparison .label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .price-comparison .value {
+            font-weight: 600;
+            color: #27ae60;
+        }
+        
+        .operator-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .visual-explanation {
+            background-color: #e8f4fc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .visual-explanation h3 {
+            margin-top: 0;
+            color: #2980b9;
+            font-size: 16px;
+        }
+        
+        .example-case {
+            background-color: #fff;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+        }
+        
+        .example-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .example-desc {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container">
+        <h1>Калькулятор стоимости 3D-печати</h1>
+        <p class="subtitle">Справедливые цены с учетом реального времени оператора</p>
+        
+        <div class="info-note">
+            <h3>Как пользоваться калькулятором:</h3>
+            <p>1. Выберите тип материала<br>
+            2. Введите стоимость и вес катушки (можно посмотреть на этикетке)<br>
+            3. Укажите вес модели и время печати<br>
+            4. Выберите сложность модели (поддержки)<br>
+            5. Выберите степень участия оператора<br>
+            6. Укажите количество копий</p>
+            <p><em>Наценка 50% включена в расчет для покрытия расходов</em></p>
+        </div>
+        
+        <div class="calculator-grid">
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="material-type">Тип материала</label>
+                    <select id="material-type">
+                        <option value="pla">PLA (стандартный)</option>
+                        <option value="petg">PETG (прочный)</option>
+                        <option value="petg_cf">PETG Carbon Fiber (с углеволокном)</option>
+                        <option value="tpu">TPU (гибкий)</option>
+                    </select>
+                    <div class="hint">Выберите тип пластика, который будете использовать</div>
+                </div>
+                
+                <div class="material-data-grid">
+                    <div class="input-group">
+                        <label for="spool-price">Стоимость катушки</label>
+                        <div class="unit" data-unit="₽">
+                            <input type="number" id="spool-price" min="100" max="50000" step="50" value="1200">
+                        </div>
+                        <div class="hint">Цена за катушку (смотрите на этикетке)</div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="spool-weight">Вес катушки</label>
+                        <div class="unit" data-unit="грамм">
+                            <input type="number" id="spool-weight" min="100" max="10000" step="50" value="1000">
+                        </div>
+                        <div class="hint">Вес материала в катушке (обычно 1000г)</div>
+                    </div>
+                </div>
+                
+                <div class="spool-example">
+                    <h4>Примеры стоимости катушек (1кг):</h4>
+                    <ul>
+                        <li>PLA бюджетный: 800-1200 ₽</li>
+                        <li>PLA качественный: 1200-2000 ₽</li>
+                        <li>PETG: от 900-2500 ₽</li>
+                        <li>PETG Carbon Fiber: от 2000-4000 ₽</li>
+                        <li>TPU: 2000-3500 ₽</li>
+                    </ul>
+                </div>
+                
+                <div class="input-group">
+                    <label for="weight">Вес модели</label>
+                    <div class="unit" data-unit="грамм">
+                        <input type="number" id="weight" min="1" max="5000" value="100">
+                    </div>
+                    <div class="hint">Вес готовой модели без поддержек</div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="time">Время печати</label>
+                    <div class="unit" data-unit="часов">
+                        <input type="number" id="time" min="0.1" max="200" step="0.1" value="5">
+                    </div>
+                    <div class="hint">Ориентировочное время печати в часах</div>
+                </div>
+            </div>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <label>Сложность модели (поддержки)</label>
+                    <div class="complexity-options" id="complexity-options">
+                        <div class="complexity-option active" data-level="1">
+                            <div class="complexity-icon">🔵</div>
+                            <div class="complexity-label">Без поддержек</div>
+                            <div class="complexity-factor">Материал +5%</div>
+                        </div>
+                        <div class="complexity-option" data-level="2">
+                            <div class="complexity-icon">🟢</div>
+                            <div class="complexity-label">Минимум поддержек</div>
+                            <div class="complexity-factor">Материал +15%</div>
+                        </div>
+                        <div class="complexity-option" data-level="3">
+                            <div class="complexity-icon">🟡</div>
+                            <div class="complexity-label">Средние поддержки</div>
+                            <div class="complexity-factor">Материал +25%</div>
+                        </div>
+                        <div class="complexity-option" data-level="4">
+                            <div class="complexity-icon">🔴</div>
+                            <div class="complexity-label">Много поддержек</div>
+                            <div class="complexity-factor">Материал +35%</div>
+                        </div>
+                        <div class="complexity-option" data-level="5">
+                            <div class="complexity-icon">🟣</div>
+                            <div class="complexity-label">Максимум + обработка</div>
+                            <div class="complexity-factor">Материал +50%</div>
+                        </div>
+                    </div>
+                    <div class="complexity-description" id="complexity-description">
+                        Простая деталь, не требует дополнительных конструкций
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label>Участие оператора</label>
+                    <div class="operator-grid" id="operator-options">
+                        <div class="operator-option active" data-level="1">
+                            <div class="operator-icon">⚡</div>
+                            <div class="operator-label">Автоматически</div>
+                            <div class="operator-factor">0.1× время</div>
+                        </div>
+                        <div class="operator-option" data-level="2">
+                            <div class="operator-icon">👁️</div>
+                            <div class="operator-label">Наблюдение</div>
+                            <div class="operator-factor">0.25× время</div>
+                        </div>
+                        <div class="operator-option" data-level="3">
+                            <div class="operator-icon">🛠️</div>
+                            <div class="operator-label">Настройка</div>
+                            <div class="operator-factor">0.5× время</div>
+                        </div>
+                        <div class="operator-option" data-level="4">
+                            <div class="operator-icon">🔧</div>
+                            <div class="operator-label">Контроль</div>
+                            <div class="operator-factor">0.75× время</div>
+                        </div>
+                        <div class="operator-option" data-level="5">
+                            <div class="operator-icon">👨‍🔧</div>
+                            <div class="operator-label">Полное участие</div>
+                            <div class="operator-factor">1.0× время</div>
+                        </div>
+                    </div>
+                    <div class="operator-description" id="operator-description">
+                        Запустил и забыл, минимальное участие
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <label for="quantity">Количество копий</label>
+                    <input type="number" id="quantity" min="1" max="100" value="1">
+                </div>
+                
+                <div class="visual-explanation">
+                    <h3>Примеры сочетаний:</h3>
+                    <div class="example-case">
+                        <div class="example-title">Игрушечный пистолет</div>
+                        <div class="example-desc">Без поддержек + Автоматически = низкая стоимость</div>
+                    </div>
+                    <div class="example-case">
+                        <div class="example-title">Фигурка с деталями</div>
+                        <div class="example-desc">Много поддержек + Настройка = средняя стоимость</div>
+                    </div>
+                    <div class="example-case">
+                        <div class="example-title">Техническая деталь</div>
+                        <div class="example-desc">Максимум + Полное участие = высокая стоимость</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="material-info" id="material-calc">
+            <strong>Расчет материала:</strong><br>
+            Цена за грамм: <span id="price-per-gram">1.20</span> ₽<br>
+            Цена за 100г: <span id="price-per-100g">120.00</span> ₽<br>
+            Цена за 1кг: <span id="price-per-kg">1200.00</span> ₽<br>
+            Процент брака: <span id="waste-percent">10%</span> + <span id="complexity-bonus">0%</span> (поддержки)
+        </div>
+        
+        <button class="button" id="calculate-btn">Рассчитать стоимость</button>
+        <button class="button reset-button" id="reset-btn">Сбросить значения</button>
+        
+        <div class="results" id="results" style="display: none;">
+            <div class="result-row">
+                <span>Стоимость материала:</span>
+                <span id="material-cost">0 ₽</span>
+            </div>
+            <div class="result-row">
+                <span>Электроэнергия и обслуживание:</span>
+                <span id="operational-cost">0 ₽</span>
+            </div>
+            <div class="result-row">
+                <span>Работа оператора:</span>
+                <span id="labor-cost">0 ₽</span>
+            </div>
+            <div class="result-row">
+                <span>Прибыль (50%):</span>
+                <span id="profit-display">0 ₽</span>
+            </div>
+            <div class="result-row">
+                <span>Итоговая стоимость:</span>
+                <span id="total-cost">0 ₽</span>
+            </div>
+            
+            <div class="cost-breakdown">
+                <div class="breakdown-item">
+                    <span>Стоимость за 1 шт:</span>
+                    <span id="per-unit">0 ₽</span>
+                </div>
+                <div class="breakdown-item">
+                    <span>Количество:</span>
+                    <span id="quantity-display">1 шт</span>
+                </div>
+                <div class="price-per-gram">
+                    <span>Цена за грамм: </span>
+                    <span id="calculated-price-per-gram">0 ₽/г</span>
+                </div>
+                <div class="profit-item">
+                    <span>Ваша прибыль с заказа:</span>
+                    <span id="total-profit">0 ₽</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="market-price" id="market-comparison" style="display: none;">
+            <h3>Сравнение с рыночными ценами</h3>
+            <div class="price-comparison">
+                <span class="label">Ваша цена за грамм:</span>
+                <span class="value" id="your-price-per-gram">0 ₽/г</span>
+            </div>
+            <div class="price-comparison">
+                <span class="label">Рыночный диапазон (РФ):</span>
+                <span class="value" id="market-range">8-15 ₽/г</span>
+            </div>
+            <div class="hint" style="margin-top: 10px; text-align: center;">
+                Гибкая система позволяет снизить цену для простых проектов
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Параметры материалов (базовый брак)
+        const MATERIAL_WASTE_RATES = {
+            pla: 0.10,        // 10% брак для PLA
+            petg: 0.15,       // 15% брак для PETG
+            petg_cf: 0.20,    // 20% брак для PETG Carbon Fiber
+            tpu: 0.25         // 25% брак для TPU
+        };
+
+        // Надбавка за сложность (дополнительный брак материала)
+        const COMPLEXITY_BONUS = {
+            1: 0.05,   // 5% доп. материала
+            2: 0.15,   // 15% доп. материала
+            3: 0.25,   // 25% доп. материала
+            4: 0.35,   // 35% доп. материала
+            5: 0.50    // 50% доп. материала
+        };
+
+        // Коэффициенты участия оператора (какая часть времени печати требует внимания)
+        const OPERATOR_PARTICIPATION = {
+            1: 0.10,   // 10% времени печати
+            2: 0.25,   // 25% времени печати
+            3: 0.50,   // 50% времени печати
+            4: 0.75,   // 75% времени печати
+            5: 1.00    // 100% времени печати
+        };
+
+        // Описания участия оператора
+        const OPERATOR_DESCRIPTIONS = {
+            1: "Запустил и забыл, минимальное участие (только запуск и завершение)",
+            2: "Периодическое наблюдение (проверка каждые несколько часов)",
+            3: "Регулярная настройка и контроль (калибровка, замена нити, наблюдение)",
+            4: "Активный контроль (частые проверки, устранение проблем)",
+            5: "Полное участие (сложная настройка, постоянный контроль, риск неудачи)"
+        };
+
+        // Рыночные цены за грамм для сравнения
+        const MARKET_PRICES = {
+            pla: { min: 8, max: 15 },
+            petg: { min: 10, max: 20 },
+            petg_cf: { min: 15, max: 30 },
+            tpu: { min: 15, max: 25 }
+        };
+
+        // РЕАЛЬНЫЕ ПАРАМЕТРЫ
+        const REALISTIC_PARAMS = {
+            electricityCost: 5.0,           // ₽ за кВт·ч
+            printerCost: 50000,             // ₽ стоимость принтера
+            printerLifespan: 10000,         // часов ресурс принтера
+            printerPower: 150,              // Вт мощность принтера
+            baseLaborRate: 150              // ₽/час реальная ставка оператора (150₽/ч)
+        };
+
+        // НАЦЕНКА 50%
+        const DEFAULT_MARGIN = 0.50;
+
+        // Элементы DOM
+        const materialTypeSelect = document.getElementById('material-type');
+        const spoolPriceInput = document.getElementById('spool-price');
+        const spoolWeightInput = document.getElementById('spool-weight');
+        const weightInput = document.getElementById('weight');
+        const timeInput = document.getElementById('time');
+        const complexityOptions = document.getElementById('complexity-options');
+        const complexityDescription = document.getElementById('complexity-description');
+        const operatorOptions = document.getElementById('operator-options');
+        const operatorDescription = document.getElementById('operator-description');
+        const quantityInput = document.getElementById('quantity');
+        const pricePerGramSpan = document.getElementById('price-per-gram');
+        const pricePer100gSpan = document.getElementById('price-per-100g');
+        const pricePerKgSpan = document.getElementById('price-per-kg');
+        const wastePercentSpan = document.getElementById('waste-percent');
+        const complexityBonusSpan = document.getElementById('complexity-bonus');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const resultsDiv = document.getElementById('results');
+        const marketComparison = document.getElementById('market-comparison');
+        
+        // Элементы результатов
+        const materialCostEl = document.getElementById('material-cost');
+        const operationalCostEl = document.getElementById('operational-cost');
+        const laborCostEl = document.getElementById('labor-cost');
+        const profitDisplayEl = document.getElementById('profit-display');
+        const totalCostEl = document.getElementById('total-cost');
+        const perUnitEl = document.getElementById('per-unit');
+        const quantityDisplayEl = document.getElementById('quantity-display');
+        const totalProfitEl = document.getElementById('total-profit');
+        const calculatedPricePerGramEl = document.getElementById('calculated-price-per-gram');
+        const yourPricePerGramEl = document.getElementById('your-price-per-gram');
+        const marketRangeEl = document.getElementById('market-range');
+
+        // Текущие уровни
+        let currentComplexity = 1;
+        let currentOperatorLevel = 1;
+
+        // Инициализация сложности
+        function initComplexity() {
+            const options = complexityOptions.querySelectorAll('.complexity-option');
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    options.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    currentComplexity = parseInt(this.getAttribute('data-level'));
+                    updateMaterialCalculation();
+                });
+            });
+        }
+
+        // Инициализация участия оператора
+        function initOperator() {
+            const options = operatorOptions.querySelectorAll('.operator-option');
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    options.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    currentOperatorLevel = parseInt(this.getAttribute('data-level'));
+                    updateOperatorDescription(currentOperatorLevel);
+                    calculateCost();
+                });
+            });
+            updateOperatorDescription(currentOperatorLevel);
+        }
+
+        // Обновление описания участия оператора
+        function updateOperatorDescription(level) {
+            const description = OPERATOR_DESCRIPTIONS[level] || "Запустил и забыл, минимальное участие";
+            operatorDescription.textContent = description;
+        }
+
+        // Обновление расчета материала
+        function updateMaterialCalculation() {
+            const spoolPrice = parseFloat(spoolPriceInput.value);
+            const spoolWeight = parseFloat(spoolWeightInput.value);
+            
+            const pricePerGram = spoolPrice / spoolWeight;
+            const pricePer100g = pricePerGram * 100;
+            const pricePerKg = pricePerGram * 1000;
+            
+            const materialType = materialTypeSelect.value;
+            const baseWasteRate = MATERIAL_WASTE_RATES[materialType] || 0.10;
+            const complexityBonus = COMPLEXITY_BONUS[currentComplexity] || 0.05;
+            const totalWaste = baseWasteRate + complexityBonus;
+            
+            pricePerGramSpan.textContent = pricePerGram.toFixed(2);
+            pricePer100gSpan.textContent = pricePer100g.toFixed(2);
+            pricePerKgSpan.textContent = pricePerKg.toFixed(2);
+            wastePercentSpan.textContent = (baseWasteRate * 100) + '%';
+            complexityBonusSpan.textContent = (complexityBonus * 100) + '%';
+            
+            calculateCost();
+        }
+
+        // Расчет стоимости
+        function calculateCost() {
+            const materialType = materialTypeSelect.value;
+            const spoolPrice = parseFloat(spoolPriceInput.value);
+            const spoolWeight = parseFloat(spoolWeightInput.value);
+            const weight = parseFloat(weightInput.value);
+            const time = parseFloat(timeInput.value);
+            const quantity = parseInt(quantityInput.value);
+            
+            // Получаем коэффициенты
+            const baseWasteRate = MATERIAL_WASTE_RATES[materialType] || 0.10;
+            const complexityBonus = COMPLEXITY_BONUS[currentComplexity] || 0.05;
+            const totalWasteMultiplier = 1 + baseWasteRate + complexityBonus;
+            const operatorParticipation = OPERATOR_PARTICIPATION[currentOperatorLevel] || 0.10;
+            
+            // 1. Материал с учетом брака и сложности
+            const pricePerGram = spoolPrice / spoolWeight;
+            const materialCost = pricePerGram * weight * totalWasteMultiplier;
+            
+            // 2. Электроэнергия
+            const powerKW = REALISTIC_PARAMS.printerPower / 1000;
+            const electricityCostTotal = powerKW * time * REALISTIC_PARAMS.electricityCost;
+            
+            // 3. Амортизация
+            const depreciationPerHour = REALISTIC_PARAMS.printerCost / REALISTIC_PARAMS.printerLifespan;
+            const depreciationCost = depreciationPerHour * time;
+            
+            // 4. Операционные расходы
+            const operationalCost = electricityCostTotal + depreciationCost;
+            
+            // 5. Трудозатраты оператора (внимание только часть времени печати)
+            const effectiveOperatorTime = time * operatorParticipation;
+            const laborCost = REALISTIC_PARAMS.baseLaborRate * effectiveOperatorTime;
+            
+            // 6. Себестоимость
+            const costPrice = materialCost + operationalCost + laborCost;
+            
+            // 7. Наценка 50%
+            const profitPerUnit = costPrice * DEFAULT_MARGIN;
+            const costWithMargin = costPrice + profitPerUnit;
+            
+            // 8. Итог
+            const totalCost = costWithMargin * quantity;
+            const costPerUnit = costWithMargin;
+            const totalProfit = profitPerUnit * quantity;
+            
+            // Расчет цены за грамм для сравнения
+            const calculatedPricePerGram = costPerUnit / weight;
+            
+            // Рыночные цены для сравнения
+            const marketPrice = MARKET_PRICES[materialType] || MARKET_PRICES.pla;
+            const marketRange = `${marketPrice.min}-${marketPrice.max} ₽/г`;
+            
+            // Отображение результатов
+            materialCostEl.textContent = `${(materialCost * quantity).toFixed(2)} ₽`;
+            operationalCostEl.textContent = `${(operationalCost * quantity).toFixed(2)} ₽`;
+            laborCostEl.textContent = `${(laborCost * quantity).toFixed(2)} ₽`;
+            profitDisplayEl.textContent = `${(profitPerUnit * quantity).toFixed(2)} ₽ (${(DEFAULT_MARGIN * 100).toFixed(0)}%)`;
+            totalCostEl.textContent = `${totalCost.toFixed(2)} ₽`;
+            perUnitEl.textContent = `${costPerUnit.toFixed(2)} ₽`;
+            quantityDisplayEl.textContent = `${quantity} шт`;
+            totalProfitEl.textContent = `${totalProfit.toFixed(2)} ₽`;
+            calculatedPricePerGramEl.textContent = `${calculatedPricePerGram.toFixed(2)} ₽/г`;
+            yourPricePerGramEl.textContent = `${calculatedPricePerGram.toFixed(2)} ₽/г`;
+            marketRangeEl.textContent = marketRange;
+            
+            // Показываем блоки
+            resultsDiv.style.display = 'block';
+            marketComparison.style.display = 'block';
+        }
+
+        // Сброс значений
+        function resetValues() {
+            materialTypeSelect.value = 'pla';
+            spoolPriceInput.value = 1200;
+            spoolWeightInput.value = 1000;
+            weightInput.value = 100;
+            timeInput.value = 5;
+            quantityInput.value = 1;
+            
+            const complexityOpts = complexityOptions.querySelectorAll('.complexity-option');
+            complexityOpts.forEach(opt => opt.classList.remove('active'));
+            complexityOpts[0].classList.add('active');
+            currentComplexity = 1;
+            
+            const operatorOpts = operatorOptions.querySelectorAll('.operator-option');
+            operatorOpts.forEach(opt => opt.classList.remove('active'));
+            operatorOpts[0].classList.add('active');
+            currentOperatorLevel = 1;
+            updateOperatorDescription(1);
+            
+            updateMaterialCalculation();
+        }
+
+        // Инициализация
+        initComplexity();
+        initOperator();
+        updateMaterialCalculation();
+        
+        // Обработчики событий
+        materialTypeSelect.addEventListener('change', updateMaterialCalculation);
+        spoolPriceInput.addEventListener('input', updateMaterialCalculation);
+        spoolWeightInput.addEventListener('input', updateMaterialCalculation);
+        
+        calculateBtn.addEventListener('click', calculateCost);
+        resetBtn.addEventListener('click', resetValues);
+        
+        [weightInput, timeInput, quantityInput].forEach(input => {
+            input.addEventListener('input', calculateCost);
+        });
+    </script>
+</body>
+</html>
